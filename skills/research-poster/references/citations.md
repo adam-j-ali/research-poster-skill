@@ -7,7 +7,7 @@ official source, checked this session.
 
 - Confirm each against PubMed and/or its DOI (Crossref / NCBI eutils). Capture full metadata:
   authors (et al after 3-6), title, journal abbreviation, year;volume(issue):pages, DOI, PMID.
-- Spawn a `researcher` subagent for the search-and-verify pass; have it drop anything it cannot
+- Use a subagent (general-purpose) for the search-and-verify pass; have it drop anything it cannot
   verify and say so, rather than filling the gap.
 - If a well-known claim has no peer-reviewed source (e.g. a fellowship-match process announced only
   by a society/registry), cite the official society or registry page with an access date and label

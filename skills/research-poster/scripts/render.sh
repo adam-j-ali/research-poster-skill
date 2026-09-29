@@ -30,7 +30,12 @@ render_libreoffice() {
 render_powerpoint_macos() {
   [ "$(uname)" = "Darwin" ] || return 1
   command -v osascript >/dev/null 2>&1 || return 1
-  pkill -9 -x "Microsoft PowerPoint" 2>/dev/null; sleep 2
+  # This path force-quits PowerPoint (without saving) to get a clean scripting session, so never
+  # run it over the user's own open presentations: ask them to save and quit first.
+  if pgrep -x "Microsoft PowerPoint" >/dev/null 2>&1; then
+    echo "POWERPOINT IS OPEN: save your work and quit PowerPoint, then re-run (rendering restarts it)." >&2
+    exit 2
+  fi
   local try=0
   while [ $try -lt 3 ]; do
     open -a "Microsoft PowerPoint" 2>/dev/null

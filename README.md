@@ -34,7 +34,25 @@ data or colors), built with a styling recipe that avoids PowerPoint's "repair an
 - **Python 3** with: `python-pptx>=1.0`, `matplotlib`, `pdfplumber`, `pypdfium2`, `pillow`, `pypdf`
   (`pip install -r requirements.txt`).
 - **A renderer**: either **LibreOffice** (`soffice`/`libreoffice` on PATH; Linux, Windows, or macOS)
-  or **macOS with Microsoft PowerPoint**. The optional repair-detector is macOS + PowerPoint only.
+  or **macOS with Microsoft PowerPoint**.
+  The PowerPoint path restarts PowerPoint without saving, so it refuses to run while PowerPoint is
+  open: save and quit it first. The first run asks macOS to let your terminal control PowerPoint.
+
+## Works better with (optional)
+
+The skill is self-contained: the build and render run on the bundled scripts alone. These add polish:
+
+| Skill | What it adds | Install |
+|---|---|---|
+| Anthropic `pptx` + `pdf` (in `document-skills`) | editing an existing poster, reading tricky PDFs | `/plugin marketplace add anthropics/skills` then `/plugin install document-skills@anthropic-agent-skills` |
+| `frontend-design` | palette, type pairing, layout direction | `/plugin install frontend-design@claude-plugins-official` |
+| K-Dense `citation-management` (MIT) | PubMed / DOI lookup and BibTeX | copy `skills/citation-management` from [K-Dense-AI/scientific-agent-skills](https://github.com/K-Dense-AI/scientific-agent-skills) into `~/.claude/skills/` |
+| K-Dense `scientific-visualization` (MIT) | journal-style matplotlib figures, for the image-chart path | same repo, `skills/scientific-visualization` |
+
+Anthropic's document skills are source-available, not open source, so install them rather than
+copying them into another repo. Two K-Dense skills overlap with this one and are better left out
+alongside it: `pptx-posters` (an HTML/CSS poster route that answers the same requests) and
+`scientific-writing` (manuscript prose; it bans bullets, which suit a poster).
 
 ## Install
 
@@ -76,7 +94,7 @@ skills/research-poster/
 │   └── examples/                  # runnable, fictional worked examples (native + image charts)
 └── scripts/
     ├── render.sh                  # LibreOffice / PowerPoint -> PDF -> PNG
-    └── detect_repair.sh           # confirm native charts survive open (macOS)
+    └── check_charts.py            # flags the known chart-repair trigger (any OS, stdlib only)
 ```
 
 Try the example:
@@ -84,6 +102,7 @@ Try the example:
 ```
 cd skills/research-poster/references/examples
 python build_poster_example.py
+python ../../scripts/check_charts.py example_poster.pptx
 bash ../../scripts/render.sh example_poster.pptx example_poster.pdf example_poster.png 1.7
 ```
 

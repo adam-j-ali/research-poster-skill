@@ -25,14 +25,14 @@ scannable copy is a poster virtue; bullets are fine on a poster (unlike a manusc
   uneven gaps.
 - Watch for overflow: text spilling into the next section's header, or into the footer. Give each
   block enough height; when big type is added, cut words or raise the block height.
-- Use the frontend-design skill for aesthetic direction, palette, and type pairing. Keep it clean,
+- If the frontend-design skill is installed, use it for aesthetic direction, palette, and type pairing. Keep it clean,
   grounded, professional. Avoid neon, heavy gradients, glow, and AI-generated imagery; a clean,
   restrained look reads as credible. Match whatever style conventions the author's venue expects.
 
 ## Contrast
 
-Choose label colors by the background they sit on: white on dark (green) fills, dark ink on light
-(gold/gray) fills. Never dark-on-dark or white-on-light. For native doughnuts you cannot per-point
+Choose label colors by the background they sit on: white on dark fills, dark ink on light
+(pale accent or gray) fills. Never dark-on-dark or white-on-light. For native doughnuts you cannot per-point
 color labels safely, so keep labels off the slices (percentage in legend + big center number).
 
 ## House-style extraction (when a reference poster .pptx is given)

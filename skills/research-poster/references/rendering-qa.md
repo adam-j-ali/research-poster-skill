@@ -12,8 +12,13 @@
    It wraps the AppleScript in `with timeout of 280 seconds` (PowerPoint's default AppleEvent timeout
    is ~120 s and chart-heavy or large posters exceed it, giving error -1712), polls until PowerPoint
    is actually ready to be scripted (a fixed delay races the launch and gives -609 "Connection is
-   invalid"), and retries up to 3 times. The first export on a machine also triggers a one-time macOS
-   prompt to allow the terminal to control PowerPoint. Approve it, or the export fails silently. If
+   invalid"), and retries up to 3 times. Because it restarts PowerPoint without saving, it refuses
+   (exit 2, "POWERPOINT IS OPEN") when PowerPoint is already running: ask the user to save and quit
+   it first, so their own open presentations are never lost. The first export on a machine also triggers a one-time macOS
+   prompt to allow the terminal to control PowerPoint. Approve it, or the export fails silently.
+   PowerPoint is sandboxed, so the first time it opens a file from a new folder it may also show a
+   "Grant File Access" dialog, and the export waits until someone clicks Grant. If a render seems
+   frozen, ask the user to look at PowerPoint for that dialog before retrying. If
    you set `PYTHON=...`, that interpreter is used for the pypdfium2 rasterize step (handy when
    pypdfium2 lives in a conda env rather than system `python3`).
 
@@ -24,16 +29,17 @@ Note: LibreOffice and PowerPoint render charts slightly differently (fonts, spac
 poster against one renderer, spot-check it in the other before final delivery if the audience will
 open it in PowerPoint.
 
-## Repair detection (native charts, macOS + PowerPoint only)
+## Chart-repair check (native charts, any OS)
 
-After building native charts on macOS, you can confirm none were stripped on open:
+After building native charts, check the file for the known repair trigger:
 
-    bash ${CLAUDE_SKILL_DIR}/scripts/detect_repair.sh "<poster.pptx>"
+    python3 ${CLAUDE_SKILL_DIR}/scripts/check_charts.py "<poster.pptx>"
 
-It reports how many chart objects survived and whether a repair alert fired. If a chart went missing,
-a doughnut/pie data-label position was set somewhere (see build-and-charts.md); remove it. Even
-without this macOS-only check, following the safe-styling rule (never set a doughnut/pie data-label
-position) prevents the repair on every platform.
+It reads the chart XML inside the .pptx (no PowerPoint needed), reports how many native charts the
+file holds, and exits 1 naming each doughnut/pie that carries a data-label position (`<c:dLblPos>`),
+the setting PowerPoint answers by deleting the chart on open. Remove it (see build-and-charts.md).
+It checks for that known trigger only, so still look at the render: every chart you built should be
+in the PNG.
 
 ## Self-QA loop (do this to a high bar before showing the user)
 
@@ -48,7 +54,7 @@ Render, look at the PNG, and check every item, then fix and re-render. Iterate u
 - Contrast is strong everywhere (label color vs its background).
 - Columns align (tops and bottoms), the layout reads as one system.
 - Numbers are correct and match the source (the build already asserts this; eyeball it too).
-- Native charts survived (detector, macOS) and there is no repair prompt.
+- check_charts.py passes and every chart you built appears in the render.
 - The house-style palette, fonts, and logo match the reference when one was provided.
 
 A picture is worth a thousand tokens: always view the render, do not judge from the code.

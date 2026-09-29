@@ -4,8 +4,9 @@ description: >
   Turns a PDF abstract into a polished, fully-editable scientific conference poster (.pptx + PDF +
   preview) in a matched house style, with honest charts, verified citations, big readable
   typography, and a render-and-QA loop. Use whenever the user wants to make, build, design, or
-  create a research poster, scientific poster, academic poster, conference poster, or ePoster from
-  an abstract, paper, or study; to imitate an existing poster's style with new content; or when they
+  create a research poster, scientific poster, academic poster, conference poster, or ePoster
+  (e.g. for RSNA, AHA, ASH, ASCO, ARVO, AAO, SNIS, or a residency research day) from an abstract,
+  paper, or study; to imitate an existing poster's style with new content; or when they
   mention turning an abstract or paper into a poster, a poster from a PDF, or updating a poster's
   data, charts, layout, or making poster text bigger or cleaner. Builds native, editable PowerPoint
   charts by default (avoiding the PowerPoint chart-repair prompt), or polished image charts on request.
@@ -18,8 +19,9 @@ default: text, section bands, stat tiles, and charts. The data, numbers, and cit
 real and verified; the design is readable from a distance, breathable, and matched to the author's
 house style (extracted from a reference poster when one is provided).
 
-This skill encodes a workflow that was hardened in practice. Read the bundled references before the
-step that needs them; do not reinvent the parts that are already solved (chart-safety, rendering,
+This skill encodes a workflow that was hardened in practice. Read the matching reference BEFORE the
+step that needs it, not afterwards to check your work (by then the mistake is in the output); do not
+reinvent the parts that are already solved (chart-safety, rendering,
 typography scale). Scripts live in `${CLAUDE_SKILL_DIR}/scripts/`; worked examples and deep guidance
 live in `${CLAUDE_SKILL_DIR}/references/`. Rendering uses LibreOffice (cross-platform) or Microsoft
 PowerPoint on macOS; see `references/rendering-qa.md`.
@@ -28,7 +30,7 @@ PowerPoint on macOS; see `references/rendering-qa.md`.
 <requirements>
 - python 3 with: python-pptx (>= 1.0), matplotlib, pdfplumber, pypdfium2, pillow, pypdf.
 - A renderer: LibreOffice (`soffice`/`libreoffice` on PATH, any OS) OR macOS with Microsoft PowerPoint.
-  The repair-detector (`scripts/detect_repair.sh`) is macOS + PowerPoint only and is optional.
+  The chart-repair check (`scripts/check_charts.py`) needs only python, on any OS.
 </requirements>
 
 <execution_context>
@@ -84,8 +86,8 @@ marked recommended default, so an autonomous run just takes the defaults and sta
 <phase name="1_read_inputs">
 ## Phase 1: Read every input fully
 
-1. Optionally use companion skills if the environment has them (document/pptx, dataviz, frontend
-   design, scientific writing, citation management, scientific visualization). They are enhancements;
+1. Optionally use companion skills if the environment has them (document/pptx and pdf, dataviz, frontend
+   design, citation management, scientific visualization). They are enhancements;
    the workflow below is self-contained via python-pptx, matplotlib, and a renderer.
 2. Read the abstract completely: text via `pdfplumber`, a visual render, and an OCR/image check so
    no figure is missed. Capture the title, authors, affiliations, every number, and the n/N for each.
@@ -135,8 +137,8 @@ marked recommended default, so an autonomous run just takes the defaults and sta
 
 1. Render with `bash ${CLAUDE_SKILL_DIR}/scripts/render.sh <pptx> <out.pdf> <out.png> 1.7`
    (LibreOffice, or PowerPoint on macOS), then view the PNG.
-2. On macOS with PowerPoint, optionally run `bash ${CLAUDE_SKILL_DIR}/scripts/detect_repair.sh <pptx>`
-   to confirm native charts survive with no repair alert.
+2. For native charts, run `python3 ${CLAUDE_SKILL_DIR}/scripts/check_charts.py <pptx>`: it fails if any doughnut/pie
+   carries a data-label position, the setting that makes PowerPoint delete the chart on open.
 3. Fix against the `references/rendering-qa.md` checklist: no overflow or clipping, big enough type,
    breathable padding, high contrast, aligned columns, correct numbers. Iterate until it is genuinely
    good before showing the user.
@@ -166,9 +168,16 @@ marked recommended default, so an autonomous run just takes the defaults and sta
 </success_criteria>
 
 <error_handling>
-- render.sh prints "RENDER FAILED" if no renderer is found: install LibreOffice, or run on macOS with
-  Microsoft PowerPoint. It already retries the PowerPoint path once on a transient launch race.
-- A native chart went missing after open (detect_repair.sh reports fewer charts, macOS only): a
+- render.sh prints "RENDER FAILED" if no renderer is found: say so plainly and offer the two fixes
+  (install LibreOffice, or use macOS with Microsoft PowerPoint). Do not surface raw AppleScript
+  errors (-600 / -609 / -1712) to the user. The PowerPoint path already retries on a launch race.
+- A PowerPoint render seems frozen: PowerPoint is usually waiting on a one-time macOS dialog (allow
+  the terminal to control PowerPoint, or PowerPoint's "Grant File Access"). Ask the user to look at
+  PowerPoint and approve it, then continue; do not kill and retry blind.
+- render.sh exits 2 with "POWERPOINT IS OPEN": the PowerPoint path restarts
+  PowerPoint without saving, so it refuses while the user has it open. Ask them to save and quit
+  PowerPoint, then re-run. Never quit or kill PowerPoint yourself while their files are open.
+- check_charts.py reports a REPAIR TRIGGER, or a native chart is missing from the render: a
   doughnut/pie data-label position was set somewhere; remove it (see references/build-and-charts.md).
 - python dep missing: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf`.
 </error_handling>
@@ -179,7 +188,7 @@ Read on demand, one level deep from here:
   and the exact repair trigger to avoid, honest chart-type choices, and chart styling.
 - `references/design-rules.md` : poster-scale typography and hierarchy, padding, contrast, house-style
   extraction from a reference .pptx, logos, and confirming the author block.
-- `references/rendering-qa.md` : the cross-platform render path, robustness, the repair detector,
+- `references/rendering-qa.md` : the cross-platform render path, robustness, the chart-repair check,
   and the self-QA checklist.
 - `references/citations.md` : verifying, formatting (AMA/Vancouver), hyperlinking, and sourcing.
 - `references/examples/` : two worked build scripts (native charts, image charts) to adapt.
