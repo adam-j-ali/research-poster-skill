@@ -31,7 +31,7 @@ data or colors), built with a styling recipe that avoids PowerPoint's "repair an
 
 ## Requirements
 
-- **Python 3** with: `python-pptx>=1.0`, `matplotlib`, `pdfplumber`, `pypdfium2`, `pillow`, `pypdf`
+- **Python 3** with: `python-pptx>=1.0`, `matplotlib`, `pdfplumber`, `pypdfium2`, `pillow`, `pypdf`, `pymupdf`
   (`pip install -r requirements.txt`).
 - **A renderer**: either **LibreOffice** (`soffice`/`libreoffice` on PATH; Linux, Windows, or macOS)
   or **macOS with Microsoft PowerPoint**.
@@ -87,14 +87,19 @@ each with a recommended default, so it can also run hands-off.
 skills/research-poster/
 ├── SKILL.md                       # the orchestrator: phases, principles, success criteria
 ├── references/
-│   ├── build-and-charts.md        # native editable charts + the exact repair trigger to avoid
-│   ├── design-rules.md            # poster-scale typography, hierarchy, padding, house-style
-│   ├── rendering-qa.md            # cross-platform render path + self-QA checklist
+│   ├── data-integrity.md          # reproduce the abstract from the source data before drawing it
+│   ├── venues.md                  # find and date a venue's rules; institution brand kits
+│   ├── design-rules.md            # readability floor, type scale, layout, house style
+│   ├── build-and-charts.md        # native editable charts, the repair trigger, python-pptx pitfalls
+│   ├── rendering-qa.md            # render path, readability + overlap checks, QR codes, self-QA
 │   ├── citations.md               # verify, format, hyperlink, source
 │   └── examples/                  # runnable, fictional worked examples (native + image charts)
 └── scripts/
     ├── render.sh                  # LibreOffice / PowerPoint -> PDF -> PNG
-    └── check_charts.py            # flags the known chart-repair trigger (any OS, stdlib only)
+    ├── check_charts.py            # flags the known chart-repair trigger (any OS, stdlib only)
+    ├── check_fonts.py             # fails on any text below a size floor, with 1080p pixel sizes
+    ├── check_overlap.py           # lists overlapping text in the rendered PDF (needs PyMuPDF)
+    └── qr.swift                   # macOS: make and read QR codes with CoreImage, nothing to install
 ```
 
 Try the example:
@@ -103,6 +108,7 @@ Try the example:
 cd skills/research-poster/references/examples
 python build_poster_example.py
 python ../../scripts/check_charts.py example_poster.pptx
+python ../../scripts/check_fonts.py example_poster.pptx
 bash ../../scripts/render.sh example_poster.pptx example_poster.pdf example_poster.png 1.7
 ```
 

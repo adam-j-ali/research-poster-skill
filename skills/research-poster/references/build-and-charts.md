@@ -64,3 +64,44 @@ a leader line.
   statistically wrong.
 - **Big-number tile**: for a single figure (response rate, states, a range).
 - Always label the denominator (n/N) and keep any "preliminary / collection ongoing" framing.
+
+## python-pptx chart pitfalls (each one showed up in a real render)
+
+- **An 18 pt default is written into every chart** (`c:txPr ... sz="1800"`). Any chart text you do not
+  size falls back to it. Set `chart.font.size` (and `chart.font.name`) on every chart.
+- **A single-series chart prints its series name as a title** ("Success", "1-year success"). Set
+  `chart.has_title = False` unless you want that title.
+- **Charts can carry a white chart-area fill.** On a coloured panel that becomes a white box, and white
+  labels vanish into it. Give the chart space and the plot area an explicit no-fill:
+
+      from lxml import etree
+      from pptx.oxml.ns import qn
+      def transparent(chart):
+          def no_fill():
+              sp = etree.Element(qn("c:spPr")); etree.SubElement(sp, qn("a:noFill"))
+              etree.SubElement(etree.SubElement(sp, qn("a:ln")), qn("a:noFill")); return sp
+          cs = chart._chartSpace
+          for old in cs.findall(qn("c:spPr")): cs.remove(old)
+          cs.find(qn("c:chart")).addnext(no_fill())          # schema order: c:chart, c:spPr, c:txPr
+          pa = cs.find(qn("c:chart")).find(qn("c:plotArea"))
+          for old in pa.findall(qn("c:spPr")): pa.remove(old)
+          ext = pa.find(qn("c:extLst"))
+          (ext.addprevious if ext is not None else pa.append)(no_fill())
+
+- **Stacked bars label their zeros.** Use `series.data_labels` with `number_format = "0;;;"` so zero
+  segments print nothing, and set the label colour per series (white on the dark series, ink on the
+  light one). Keep the default (centre) label position on stacked charts.
+- **Line charts:** per-point labels on the first and last points (`points[i].data_label`, custom text,
+  `position` ABOVE for the upper series and BELOW for the lower) rendered cleanly and triggered no
+  repair; the hard rule stays specific to doughnut and pie positions. Use distinct markers (circle vs
+  square) as well as colour.
+- **A short chart truncates multi-line data labels** with an ellipsis. Give it height, use one-line
+  labels, or drop the chart if another one already shows the same breakdown.
+- Put legends at the top with `include_in_layout = False` so they do not squeeze the plot.
+
+## One colour per group, everywhere
+
+Give each comparison group one colour and keep it on every chart (for example group A in the brand's
+primary colour, group B in its accent), so the reader learns the key once. If the accent is light (a
+pale gold on white fails 3:1 contrast), relieve it with direct value labels on every mark, a dark
+outline on markers and bars, and ink-coloured label text; that is the fix a palette validator asks for.

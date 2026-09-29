@@ -162,6 +162,7 @@ def native_donut(bx, by, bw, bh, title, sub, cats, vals, colors, center):
     chy = by + 1.5; chh = bh - 1.5
     cd = CategoryChartData(); cd.categories = cats; cd.add_series("s", vals)
     ch = shapes.add_chart(XL_CHART_TYPE.DOUGHNUT, Inches(bx), Inches(chy), Inches(bw), Inches(chh), cd).chart
+    ch.font.size = Pt(24); ch.font.name = FONT   # python-pptx writes an 18 pt chart default; override it
     ch.has_title = False; ch.has_legend = True; ch.legend.position = XL_LEGEND_POSITION.BOTTOM
     ch.legend.include_in_layout = False; ch.legend.font.size = Pt(24); ch.legend.font.name = FONT
     pl = ch.plots[0]; pl.vary_by_categories = False; pl.has_data_labels = False
@@ -175,6 +176,7 @@ def native_bar(bx, by, bw, bh, title, sub, cats, vals, colors):
     chy = by + 1.5; chh = bh - 1.5
     cd = CategoryChartData(); cd.categories = cats; cd.add_series("Share", vals)
     ch = shapes.add_chart(XL_CHART_TYPE.BAR_CLUSTERED, Inches(bx), Inches(chy), Inches(bw), Inches(chh), cd).chart
+    ch.font.size = Pt(24); ch.font.name = FONT   # python-pptx writes an 18 pt chart default; override it
     ch.has_title = False; ch.has_legend = False
     sr = ch.plots[0].series[0]; sr.format.fill.solid(); sr.format.fill.fore_color.rgb = colors[0]
     for i, c in enumerate(colors): sr.points[i].format.fill.solid(); sr.points[i].format.fill.fore_color.rgb = c
@@ -182,7 +184,7 @@ def native_bar(bx, by, bw, bh, title, sub, cats, vals, colors):
     dl.show_value = True; dl.number_format = '0.0"%"'; dl.number_format_is_linked = False
     dl.font.size = Pt(30); dl.font.bold = True; dl.font.name = FONT; dl.font.color.rgb = NAVY
     ca = ch.category_axis; ca.tick_labels.font.size = Pt(25); ca.tick_labels.font.bold = True; ca.tick_labels.font.name = FONT
-    va = ch.value_axis; va.tick_labels.font.size = Pt(21); va.tick_labels.font.name = FONT
+    va = ch.value_axis; va.tick_labels.font.size = Pt(22); va.tick_labels.font.name = FONT
 
 def results_panel(x, y, w, h):
     section_header(x, y, w, "RESULTS")

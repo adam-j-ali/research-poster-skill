@@ -18,7 +18,9 @@
    prompt to allow the terminal to control PowerPoint. Approve it, or the export fails silently.
    PowerPoint is sandboxed, so the first time it opens a file from a new folder it may also show a
    "Grant File Access" dialog, and the export waits until someone clicks Grant. If a render seems
-   frozen, ask the user to look at PowerPoint for that dialog before retrying. If
+   frozen, ask the user to look at PowerPoint for that dialog before retrying. The grant is per
+   folder: keep every render (tests included) in one output folder PowerPoint has already been
+   granted, and copy a test file there rather than rendering from a fresh temporary folder. If
    you set `PYTHON=...`, that interpreter is used for the pypdfium2 rasterize step (handy when
    pypdfium2 lives in a conda env rather than system `python3`).
 
@@ -41,6 +43,34 @@ the setting PowerPoint answers by deleting the chart on open. Remove it (see bui
 It checks for that known trigger only, so still look at the render: every chart you built should be
 in the PNG.
 
+## Readability and overlap checks (any OS)
+
+    python3 ${CLAUDE_SKILL_DIR}/scripts/check_fonts.py "<poster.pptx>" --min 22
+    python3 ${CLAUDE_SKILL_DIR}/scripts/check_overlap.py "<rendered.pdf>"
+
+`check_fonts.py` reads every font size in the slide and chart XML, prints what the smallest and most
+common sizes come to in pixels on a 1920 px screen, and exits 1 if anything is below the floor.
+`check_overlap.py` reads the text lines out of the rendered PDF (what the renderer actually drew) and
+exits 1 if any two lines overlap or any text sits within 0.5 in of the slide edge. Both were proven
+against deliberately broken files; rerun that kind of probe if you change them.
+
+Then judge legibility the way a viewer will see it: downscale the render to exactly 1920x1080 and crop
+the densest regions (references, chart labels, the methods panel, light text on dark panels) at 1:1.
+Look at those crops, not at the full-resolution render, which flatters small text.
+
+    python3 -c "from PIL import Image; im=Image.open('poster.png').resize((1920,1080), Image.LANCZOS); \
+      im.save('screen_1080p.png'); im.crop((0, 780, 560, 1075)).save('crop_refs.png')"
+
+## QR codes
+
+Encode with the `qrcode` package, or on macOS with no install: compile
+`${CLAUDE_SKILL_DIR}/scripts/qr.swift` (`swiftc -O qr.swift -o qr`), which uses the system's CoreImage
+to `encode` a URL to a crisp PNG and to `decode` a PNG back to text. Every code on the poster must
+decode to exactly the URL it was given: assert that in the build, then crop the codes out of the
+rendered PNG (and the 1080p downscale) and decode those too. Until the author supplies the real links,
+encode a plain-text placeholder (not a dummy URL anyone could open), overlay a visible PLACEHOLDER tag,
+and keep the output named DRAFT.
+
 ## Self-QA loop (do this to a high bar before showing the user)
 
 Render, look at the PNG, and check every item, then fix and re-render. Iterate until clean:
@@ -48,8 +78,9 @@ Render, look at the PNG, and check every item, then fix and re-render. Iterate u
 - No text overflow: nothing spills into the next section's header or the footer band.
 - No clipping: chart data labels and axis labels are fully visible (give bars xlim headroom; keep
   doughnut labels off the slice edges).
-- Type is big enough: title/headers/stats dominate; body and fine print (references, footer,
-  affiliations, chart captions) are still comfortably readable, not tiny.
+- Type is big enough: check_fonts.py passes at the floor, and the 1:1 crops of the 1080p view are
+  comfortably readable, fine print included (references, footer, affiliations, chart captions).
+- check_overlap.py passes on the rendered PDF.
 - Padding is breathable: even gaps, generous margins, nothing cramped; nothing floating in a void.
 - Contrast is strong everywhere (label color vs its background).
 - Columns align (tops and bottoms), the layout reads as one system.

@@ -4,3 +4,4 @@ pdfplumber
 pypdfium2
 pillow
 pypdf
+pymupdf

@@ -12,6 +12,20 @@ description: >
   charts by default (avoiding the PowerPoint chart-repair prompt), or polished image charts on request.
 ---
 
+<references_contract>
+## References are mandatory, not optional
+
+This skill ships **6 reference files** plus two worked examples in `references/examples/`. Read the
+matching reference BEFORE the step that needs it, never afterwards to check your work.
+
+- `references/data-integrity.md`: reproduce the abstract from the source data (Phase 1)
+- `references/venues.md`: find and date the venue's rules; institution brand kits (Phases 0 and 2)
+- `references/design-rules.md`: readability floor, type scale, layout, house style (Phase 3)
+- `references/build-and-charts.md`: native charts, the repair trigger, python-pptx pitfalls (Phase 4)
+- `references/rendering-qa.md`: render, readability and overlap checks, QR codes (Phase 5)
+- `references/citations.md`: verify, format, hyperlink (Phase 2)
+</references_contract>
+
 <objective>
 Produce a submission-ready, on-brand scientific poster from a PDF abstract. The deliverable is an
 editable PowerPoint (.pptx) plus a PDF and a preview PNG. Everything is native and editable by
@@ -28,11 +42,11 @@ PowerPoint on macOS; see `references/rendering-qa.md`.
 </objective>
 
 <requirements>
-- python 3 with: python-pptx (>= 1.0), matplotlib, pdfplumber, pypdfium2, pillow, pypdf.
+- python 3 with: python-pptx (>= 1.0), matplotlib, pdfplumber, pypdfium2, pillow, pypdf, pymupdf.
 - A renderer: LibreOffice (`soffice`/`libreoffice` on PATH, any OS) OR macOS with Microsoft PowerPoint.
   The chart-repair check (`scripts/check_charts.py`) needs only python, on any OS.
-- Install: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf` (add `qrcode` if
-  the poster carries QR codes). If pip refuses with "externally-managed-environment", use a venv:
+- Install: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf pymupdf` (add `qrcode`
+  for QR codes, or use `scripts/qr.swift` on macOS). If pip refuses with "externally-managed-environment", use a venv:
   `python3 -m venv ~/.venvs/poster && ~/.venvs/poster/bin/pip install <same list>`, run the build
   with that python, and pass `PYTHON=~/.venvs/poster/bin/python` to render.sh.
 </requirements>
@@ -65,7 +79,8 @@ marked recommended default, so an autonomous run just takes the defaults and sta
   the data is final.
 - 🔴 Never: fabricate any number, result, or citation; alter the study's reported findings; overwrite
   a file the user has already finalized (always write a separate copy); ship a file that triggers
-  PowerPoint's repair prompt.
+  PowerPoint's repair prompt; copy patient-level data out of the author's file or send it to any web
+  service (read it in place, save aggregates only).
 </execution_context>
 
 <principles>
@@ -101,6 +116,11 @@ marked recommended default, so an autonomous run just takes the defaults and sta
    - Chart engine: editable native charts [default]; polished images on request.
    - Is the data final, or is more coming? If ongoing, build so numbers are trivial to update
      (single data block) and keep the preliminary framing.
+   - A single-slide poster or a talk deck? "PowerPoint for a conference" can mean either [poster].
+   - When the author's data file is supplied and disagrees with the abstract: which numbers go on the
+     poster [get the author's analysis file; else recompute and reproduce, see data-integrity.md].
+   - Links for any QR codes (videos, full paper). Missing links become marked placeholders [default].
+   - The upload deadline: ask for the acceptance email; a deadline may already be close.
 3. Autonomous mode: take the defaults, state them, proceed.
 </phase>
 
@@ -110,18 +130,26 @@ marked recommended default, so an autonomous run just takes the defaults and sta
 1. Optionally use companion skills if the environment has them (document/pptx and pdf, dataviz, frontend
    design, citation management, scientific visualization). They are enhancements;
    the workflow below is self-contained via python-pptx, matplotlib, and a renderer.
-2. Read the abstract completely: text via `pdfplumber`, a visual render, and an OCR/image check so
-   no figure is missed. Capture the title, authors, affiliations, every number, and the n/N for each.
-3. If a reference poster is provided, extract its house style: slide size, palette (band + accent
+2. Read the abstract completely: text via `pdfplumber` (`python-docx` for a .docx), a visual render,
+   and an OCR/image check so no figure is missed. Capture the title, authors, affiliations, every
+   number, and the n/N for each.
+3. If the author supplied the underlying data, read its structure before any values, then reproduce
+   every figure in the abstract from it in an `analysis.py` that asserts them and writes aggregates to
+   `data.json`. Check SD vs SE, paired vs group means, each figure's own n, category labels against the
+   original notes, and the first data row. See `references/data-integrity.md`.
+4. If a reference poster is provided, extract its house style: slide size, palette (band + accent
    fills), fonts and sizes, section-bar structure, and the logo. Render it with
    `bash ${CLAUDE_SKILL_DIR}/scripts/render.sh` to see it. See `references/design-rules.md`.
-4. Confirm python deps: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf`.
+5. Confirm python deps: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf pymupdf`.
 </phase>
 
 <phase name="2_research">
 ## Phase 2: Research
 
-1. Verify the venue's ePoster spec (dimensions, format, template).
+1. Verify the venue's ePoster spec on the society's own pages for this year (aspect ratio, fonts,
+   media, upload vendor, deadline, required disclosure wording) and date it. Confirm which
+   organisation each source is about. See `references/venues.md`, which also covers taking the
+   palette, typeface and logo from the institution's published brand kit.
 2. Verify and fetch citations: real, PubMed/DOI-checked, with hyperlinks and access dates; include
    registry and grey-literature sources the author actually uses, not only journals. See
    `references/citations.md`. Never invent a citation.
@@ -151,6 +179,12 @@ marked recommended default, so an autonomous run just takes the defaults and sta
    Full recipe in `references/build-and-charts.md`.
 3. TDD-lite: assert every displayed percentage recomputes to the source number before saving.
 4. Get authors, affiliations, and logos right per Phase 0.
+5. Readability gate: set every size from one type-scale table with a floor (22 pt on a 48 in slide),
+   set `chart.font.size` on every chart, and end the build by failing if any size in the saved file is
+   below the floor (`scripts/check_fonts.py`). See `references/design-rules.md`.
+6. Readiness gate: keep the unconfirmed items (author list, affiliation, disclosures, links) in a
+   CONFIRMED checklist in the build. Until all are True, name the output `..._DRAFT.pptx`, mark each gap
+   visibly on the poster, and print what is still open.
 </phase>
 
 <phase name="5_render_and_self_qa">
@@ -160,7 +194,10 @@ marked recommended default, so an autonomous run just takes the defaults and sta
    (LibreOffice, or PowerPoint on macOS), then view the PNG.
 2. For native charts, run `python3 ${CLAUDE_SKILL_DIR}/scripts/check_charts.py <pptx>`: it fails if any doughnut/pie
    carries a data-label position, the setting that makes PowerPoint delete the chart on open.
-3. Fix against the `references/rendering-qa.md` checklist: no overflow or clipping, big enough type,
+3. Run `scripts/check_fonts.py <pptx>` and `scripts/check_overlap.py <rendered.pdf>`, then downscale
+   the render to 1920x1080 and view the densest regions as 1:1 crops. Decode every QR code from the
+   render. See `references/rendering-qa.md`.
+4. Fix against the `references/rendering-qa.md` checklist: no overflow or clipping, big enough type,
    breathable padding, high contrast, aligned columns, correct numbers. Iterate until it is genuinely
    good before showing the user.
 </phase>
@@ -183,7 +220,10 @@ marked recommended default, so an autonomous run just takes the defaults and sta
 - [ ] Every percentage recomputes to the source number; n/N shown; preliminary framing kept if ongoing
 - [ ] Citations are all real and verified, with DOI/URL hyperlinks
 - [ ] Authors, affiliations, and logos confirmed with the user
-- [ ] Type is readable from a distance, padding is breathable, contrast is strong, columns align
+- [ ] Every figure the abstract states reproduces from the source data (when data was supplied)
+- [ ] No text below the floor (check_fonts.py), no overlapping text (check_overlap.py), legible in 1:1
+      crops of the 1080p view; padding is breathable, contrast is strong, columns align
+- [ ] Every QR code decodes from the render to exactly its link; placeholders keep the file a DRAFT
 - [ ] House style matches the reference poster when one was provided
 - [ ] A separate copy was written; the user's finalized files were not touched; work is git-tracked
 </success_criteria>
@@ -194,23 +234,29 @@ marked recommended default, so an autonomous run just takes the defaults and sta
   errors (-600 / -609 / -1712) to the user. The PowerPoint path already retries on a launch race.
 - A PowerPoint render seems frozen: PowerPoint is usually waiting on a one-time macOS dialog (allow
   the terminal to control PowerPoint, or PowerPoint's "Grant File Access"). Ask the user to look at
-  PowerPoint and approve it, then continue; do not kill and retry blind.
+  PowerPoint and approve it, then continue; do not kill and retry blind. The file-access grant is per
+  folder, so render from a folder that has already worked rather than a fresh temporary one.
 - render.sh exits 2 with "POWERPOINT IS OPEN": the PowerPoint path restarts
   PowerPoint without saving, so it refuses while the user has it open. Ask them to save and quit
   PowerPoint, then re-run. Never quit or kill PowerPoint yourself while their files are open.
 - check_charts.py reports a REPAIR TRIGGER, or a native chart is missing from the render: a
   doughnut/pie data-label position was set somewhere; remove it (see references/build-and-charts.md).
-- python dep missing: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf`.
+- python dep missing: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf pymupdf`.
 </error_handling>
 
 <references>
-Read on demand, one level deep from here:
+Read before the step that needs each one (manifest in references_contract above):
+- `references/data-integrity.md` : reproducing the abstract from source data, statistics checks,
+  category labels, confidential data handling, the DRAFT checklist.
+- `references/venues.md` : finding and dating a venue's rules, ePoster platform limits, AAO 2026
+  specifics, institution brand kits and logo extraction.
 - `references/build-and-charts.md` : python-pptx build approach, the native-editable-chart safe recipe
   and the exact repair trigger to avoid, honest chart-type choices, and chart styling.
 - `references/design-rules.md` : poster-scale typography and hierarchy, padding, contrast, house-style
   extraction from a reference .pptx, logos, and confirming the author block.
 - `references/rendering-qa.md` : the cross-platform render path, robustness, the chart-repair check,
-  and the self-QA checklist.
+  the readability and overlap checks, QR codes, and the self-QA checklist.
+- `scripts/` : render.sh, check_charts.py, check_fonts.py, check_overlap.py, qr.swift (macOS QR codes).
 - `references/citations.md` : verifying, formatting (AMA/Vancouver), hyperlinking, and sourcing.
 - `references/examples/` : two worked build scripts (native charts, image charts) to adapt.
 </references>
