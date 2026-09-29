@@ -1,6 +1,6 @@
 {
   "name": "research-poster",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Turn a PDF abstract into a polished, fully-editable scientific conference poster (.pptx + PDF + preview) with native editable PowerPoint charts, verified citations, big readable typography, and a render-and-QA loop.",
   "author": { "name": "adamjali" },
   "homepage": "https://github.com/adamjali/research-poster-skill",

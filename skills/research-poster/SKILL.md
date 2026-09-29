@@ -31,7 +31,28 @@ PowerPoint on macOS; see `references/rendering-qa.md`.
 - python 3 with: python-pptx (>= 1.0), matplotlib, pdfplumber, pypdfium2, pillow, pypdf.
 - A renderer: LibreOffice (`soffice`/`libreoffice` on PATH, any OS) OR macOS with Microsoft PowerPoint.
   The chart-repair check (`scripts/check_charts.py`) needs only python, on any OS.
+- Install: `pip install python-pptx matplotlib pdfplumber pypdfium2 pillow pypdf` (add `qrcode` if
+  the poster carries QR codes). If pip refuses with "externally-managed-environment", use a venv:
+  `python3 -m venv ~/.venvs/poster && ~/.venvs/poster/bin/pip install <same list>`, run the build
+  with that python, and pass `PYTHON=~/.venvs/poster/bin/python` to render.sh.
 </requirements>
+
+<companion_skills>
+Everything this skill needs is bundled; the build, render, and check run on the scripts here alone.
+These optional skills add polish. Use any that are installed. If one is missing, carry on without it
+and mention the one-line install to the user once; never stop for it.
+
+| Skill | Adds | Install (in Claude Code) |
+|---|---|---|
+| Anthropic `pptx` + `pdf` (`document-skills`) | editing an existing poster, hard PDFs | `/plugin marketplace add anthropics/skills`, then `/plugin install document-skills@anthropic-agent-skills` |
+| `frontend-design` | palette, type pairing, layout direction | `/plugin install frontend-design@claude-plugins-official` |
+| K-Dense `citation-management` (MIT) | PubMed / DOI lookup, formatted references | copy `skills/citation-management` from github.com/K-Dense-AI/scientific-agent-skills into `~/.claude/skills/` |
+| K-Dense `scientific-visualization` (MIT) | journal-style matplotlib figures (image-chart route) | same repo, `skills/scientific-visualization` |
+
+Leave out K-Dense `pptx-posters` (an HTML/CSS poster route that competes for the same requests) and
+`scientific-writing` (manuscript prose that bans the bullets a poster needs). Citation checks need no
+extra skill: web search and fetch against PubMed / Crossref / doi.org do the job.
+</companion_skills>
 
 <execution_context>
 Run interactively OR fully autonomously. Every gate below is an `AskUserQuestion` with a clearly
