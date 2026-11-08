@@ -21,7 +21,7 @@ A Claude Code skill that turns a PDF abstract into an editable scientific confer
 In Claude Code:
 
 ```text
-/plugin marketplace add adamjali/research-poster-skill
+/plugin marketplace add adam-j-ali/research-poster-skill
 /plugin install research-poster@research-poster
 ```
 
